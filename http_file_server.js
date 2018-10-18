@@ -17,6 +17,8 @@ function connectionHandler(req, res) {
     
     // serve file contents
     const fileStream = fs.createReadStream(path);
+    // note: there exist interfaces: ReadableStream and WritableStream
+    //  ONLY READABLESTREAMS CAN BE PIPED! (Duplex and TransformStreams can be piped)
     
     // pipe file stream to http resp stream
     fileStream.pipe(res);

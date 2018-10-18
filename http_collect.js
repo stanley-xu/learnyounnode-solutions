@@ -12,6 +12,9 @@
 const http = require('http');
 const url = process.argv[2];
 
+// TODO: do approach 1 w/ through2; remember to concat properly
+// TODO: solution using concat-stream
+
 // approach 2: using buffer list
 const bl = require('bl');
 

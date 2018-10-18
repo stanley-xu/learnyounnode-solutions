@@ -5,6 +5,8 @@
  */
 
 const http = require('http');
+// through2-map is a specialized module 
+//  (see through2: https://www.npmjs.com/package/through2)
 const map = require('through2-map');
 const port = +process.argv[2];
 

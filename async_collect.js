@@ -1,14 +1,38 @@
 /**
  * HTTP Collect but juggles the async responses from 3 separate servers
+ * Must return the responses IN ORDER from the urls specified in the args
  * 
- * Returns char sequence from each URL specified in cmdline (in that order)
+ * arg1, arg2, arg3: urls
+ * 
+ * note: cannot accept secure HTTP (protocol not supported by http module)
+ * 
+ * note: this problem is a class of async problems that implies ORDER
+ *  SHOULD BE RESPECTED
+ * If the result of all async work could be combined in any order
+ *  then we can just register a callback that is run asynchronously and
+ *  do something once all tasks are done
+ * Non-blocking behavior is default in Node so you don't even have to
+ *  think about this
  */
 
 const urls = [process.argv[2], process.argv[3], process.argv[4]];
+const blCollect = require('./bufferlist_collect');
 
-// ATTEMPT 4
+/**
+ * Use promises or async (npm module) or asnyc/await (node 7+)
+ */
+
+// ---
+
+// Correct solutions
+
+/**
+ * Attempt 4: Official solution
+ * 
+ * Correctness: the sequential for loop ensures this
+ * Performance: but it's blocking (?)
+ */
 let results = [];
-let index = 0;
 
 const http = require('http');
 const bl = require('bl');
@@ -32,16 +56,47 @@ for (let i = 0; i < urls.length; i++) {
     doGet(i);
 }
 
+/**
+ * Attempt 2: Naive
+ * 
+ * It's callback hell but it's easy to come up with
+ * 
+ * Correctness: guaranteed by sequencing of callbacks
+ * Performance: would execute sequentially (in effect)
+ */
+blCollect(urls[0], (err, data) => {
+    if (err) return console.error(err);
+    console.log(data);
+    blCollect(urls[1], (err, data) => {
+        if (err) return console.error(err);
+        console.log(data);
+        blCollect(urls[2], (err, data) => {
+            if (err) return console.error(err);
+            console.log(data);
+        });
+    
+    });
+
+});
+
 // ---
 
-// FAILED ATTEMPTS
+// Incorrect solutions
 
-//const blCollect = require('./bufferlist_collect');
-
-// ATTEMPT 3
-// this doesn't work because there is no guarantee
-//  about when forEach will execute its function
-//  against its urls
+/**
+ * Attempt 3: keep watch of the length of our received results
+ *  and act on it once it's filled (array length = 3)
+ * 
+ * Correctness:
+ * This doesn't work--not because forEach is asynchronous (it's not)
+ *  but because blCollect is asynchronous (?)
+ * 
+ * BUT, this does let us know when all async requests have been served
+ *  and act accordingly (print output)
+ * In problems where we don't care about the order the requests have been 
+ *  served, this solution is perfectly fine
+ * 
+ */
 
 // let results = [];
 // let index = 0;
@@ -58,23 +113,10 @@ for (let i = 0; i < urls.length; i++) {
 //     });
 // });
 
-// ATTEMPT 2
-// blCollect(urls[0], (err, data) => {
-//     if (err) return console.error(err);
-//     console.log(data);
-//     blCollect(urls[1], (err, data) => {
-//         if (err) return console.error(err);
-//         console.log(data);
-//         blCollect(urls[2], (err, data) => {
-//             if (err) return console.error(err);
-//             console.log(data);
-//         });
-    
-//     });
-
-// });
-
-// ATTEMPT 1
+/**
+ * Attempt 1
+ * see attempt 3 above
+ */
 // urls.forEach(e => {
 //     blCollect(e, (err, data) => {
 //         if (err) return console.error(err);
